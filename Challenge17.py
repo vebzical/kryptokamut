@@ -41,6 +41,7 @@ def CBCDecrypt(blocksize, ciphertext, ECB, iv):
 def PKCS7Pad(blocksize, text):
 	requiredpad = (blocksize - len(text) % blocksize)
 	paddingchar = bytes([requiredpad])
+	
 	if requiredpad != blocksize:
 		text += (paddingchar * requiredpad)
 	return text
@@ -51,14 +52,24 @@ def PKCS7Strip(text, blocksize):
 		print("Wrong block size")
 		raise PaddingError
 	
+	if not PKCS7Check(text):
+		return text
+	
 	last_byte = text[-1]
 	padding_size = int(last_byte)
-	
+		
 	if not text.endswith(bytes([last_byte])*padding_size):
 		print("Wrong bytes")
 		raise PaddingError
 	
 	return text[:-padding_size]
+	
+
+def PKCS7Check(binary_data):
+	# Take what we expect to be the padding
+    padding = binary_data[-binary_data[-1]:]
+    # Check that all the bytes in the range indicated by the padding are equal to the padding value itself
+    return all(padding[b] == len(padding) for b in range(0, len(padding)))
 	
 def ECBEncrypt(text, key, blocksize):
 	text = PKCS7Pad(blocksize, text)
@@ -166,6 +177,7 @@ def EncryptMessage(key, msg):
 
 def decrypt_and_check_padding(key, ctxt):
 	ptxt = CBCDecrypt(16, ctxt["ciphertext"], AES.new(key, AES.MODE_ECB), ctxt["iv"])
+	print(ptxt)
 	try:
 		txt = PKCS7Strip(ptxt, 16)
 	except:
